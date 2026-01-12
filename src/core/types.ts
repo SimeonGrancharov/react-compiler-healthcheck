@@ -57,5 +57,4 @@ export type HealthcheckConfig = {
   include: string[];
   exclude: string[];
   cwd?: string;
-  babelPluginPath?: string;
 };

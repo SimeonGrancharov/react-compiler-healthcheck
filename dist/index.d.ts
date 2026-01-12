@@ -57,12 +57,11 @@ type HealthcheckConfig = {
     include: string[];
     exclude: string[];
     cwd?: string;
-    babelPluginPath?: string;
 };
 
 declare function clearPluginCache(): void;
-declare function checkFile(filePath: string, workspaceFolder?: string, babelPluginPath?: string): FileCheckResult;
-declare function checkFiles(filePaths: string[], workspaceFolder?: string, babelPluginPath?: string): FileCheckResult[];
+declare function checkFile(filePath: string, workspaceFolder?: string): FileCheckResult;
+declare function checkFiles(filePaths: string[], workspaceFolder?: string): FileCheckResult[];
 
 type ScanOptions = {
     include: string[];

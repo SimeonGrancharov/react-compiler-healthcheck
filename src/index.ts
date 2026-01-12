@@ -37,7 +37,6 @@ export async function runHealthcheck(
     include = DEFAULT_INCLUDE_PATTERNS,
     exclude = DEFAULT_EXCLUDE_PATTERNS,
     cwd = process.cwd(),
-    babelPluginPath = "node_modules/babel-plugin-react-compiler",
   } = config;
 
   console.log("Scanning for React files...");
@@ -59,7 +58,7 @@ export async function runHealthcheck(
   }
 
   console.log("Checking files for React Compiler optimization...");
-  const results = checkFiles(files, cwd, babelPluginPath);
+  const results = checkFiles(files, cwd);
   const summary = calculateSummary(results);
 
   return {

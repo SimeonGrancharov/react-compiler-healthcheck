@@ -93,30 +93,55 @@ var DEFAULT_COMPILER_OPTIONS = {
   }
 };
 var cachedPlugin;
+var pluginLoadFailed = false;
 function clearPluginCache() {
   cachedPlugin = void 0;
+  pluginLoadFailed = false;
 }
-function loadBabelPlugin(workspaceFolder, babelPluginPath) {
-  if (cachedPlugin) {
-    return cachedPlugin;
-  }
-  if (workspaceFolder) {
-    const fullPath = path.join(workspaceFolder, babelPluginPath);
+function getPluginVersion(pluginPath) {
+  let dir = path.dirname(pluginPath);
+  for (let i = 0; i < 5; i++) {
     try {
-      cachedPlugin = require(fullPath);
-      return cachedPlugin;
-    } catch (error2) {
-      console.warn(
-        `Could not load babel-plugin-react-compiler from ${fullPath}: ${error2?.message}`
-      );
+      const packageJsonPath = path.join(dir, "package.json");
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+      if (packageJson.name === "babel-plugin-react-compiler") {
+        return packageJson.version || "unknown";
+      }
+    } catch {
     }
+    dir = path.dirname(dir);
   }
+  return "unknown";
+}
+function loadBabelPlugin(workspaceFolder) {
+  if (cachedPlugin) {
+    return cachedPlugin.plugin;
+  }
+  if (pluginLoadFailed) {
+    return void 0;
+  }
+  const searchPath = workspaceFolder || process.cwd();
   try {
-    cachedPlugin = require("babel-plugin-react-compiler");
-    return cachedPlugin;
+    const resolvedPath = require.resolve("babel-plugin-react-compiler", {
+      paths: [searchPath]
+    });
+    const plugin = require(resolvedPath);
+    const version = getPluginVersion(resolvedPath);
+    cachedPlugin = { plugin, version, source: resolvedPath };
+    console.log(`Using babel-plugin-react-compiler@${version} from ${resolvedPath}`);
+    return plugin;
   } catch (error2) {
+    pluginLoadFailed = true;
     console.error(
-      `Failed to load babel-plugin-react-compiler: ${error2?.message}`
+      `
+\u274C babel-plugin-react-compiler not found.
+   Searched from: ${searchPath}
+
+   Please install it in your project:
+     npm install babel-plugin-react-compiler
+   or
+     pnpm add babel-plugin-react-compiler
+`
     );
     return void 0;
   }
@@ -172,7 +197,7 @@ function runBabelPluginReactCompiler(BabelPluginReactCompiler, sourceCode, filen
     failedCompilations
   };
 }
-function checkFile(filePath, workspaceFolder, babelPluginPath = "node_modules/babel-plugin-react-compiler") {
+function checkFile(filePath, workspaceFolder) {
   const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(workspaceFolder || process.cwd(), filePath);
   let sourceCode;
   try {
@@ -188,7 +213,7 @@ function checkFile(filePath, workspaceFolder, babelPluginPath = "node_modules/ba
       error: `Failed to read file: ${error2?.message}`
     };
   }
-  const plugin = loadBabelPlugin(workspaceFolder, babelPluginPath);
+  const plugin = loadBabelPlugin(workspaceFolder);
   if (!plugin) {
     return {
       filePath,
@@ -226,9 +251,9 @@ function checkFile(filePath, workspaceFolder, babelPluginPath = "node_modules/ba
     };
   }
 }
-function checkFiles(filePaths, workspaceFolder, babelPluginPath) {
+function checkFiles(filePaths, workspaceFolder) {
   return filePaths.map(
-    (filePath) => checkFile(filePath, workspaceFolder, babelPluginPath)
+    (filePath) => checkFile(filePath, workspaceFolder)
   );
 }
 
@@ -449,8 +474,7 @@ async function runHealthcheck(config = {}) {
   const {
     include = DEFAULT_INCLUDE_PATTERNS,
     exclude = DEFAULT_EXCLUDE_PATTERNS,
-    cwd = process.cwd(),
-    babelPluginPath = "node_modules/babel-plugin-react-compiler"
+    cwd = process.cwd()
   } = config;
   console.log("Scanning for React files...");
   const files = await scanFiles({ include, exclude, cwd });
@@ -469,7 +493,7 @@ async function runHealthcheck(config = {}) {
     };
   }
   console.log("Checking files for React Compiler optimization...");
-  const results = checkFiles(files, cwd, babelPluginPath);
+  const results = checkFiles(files, cwd);
   const summary = calculateSummary(results);
   return {
     summary,

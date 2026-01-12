@@ -24,7 +24,7 @@
     "@babel/core": "^7.26.0",
     "@babel/parser": "^7.26.2",
     "@babel/preset-typescript": "^7.26.0",
-    "babel-plugin-react-compiler": "^19.0.0-beta-e993439-20250109",
+    "babel-plugin-react-compiler": "1.0.0",
     "glob": "^11.0.0",
     "react": "^19.0.0"
   },
