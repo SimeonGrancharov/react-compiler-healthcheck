@@ -1,0 +1,38 @@
+{
+  "name": "react-compiler-healthcheck",
+  "version": "0.1.0",
+  "description": "GitHub Action to verify React components are optimized by React Compiler",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsup src/index.ts src/action.ts --format cjs --dts --clean",
+    "dev": "tsup src/index.ts src/action.ts --format cjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "react",
+    "react-compiler",
+    "github-action",
+    "ci",
+    "healthcheck"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/github": "^6.0.0",
+    "@babel/core": "^7.26.0",
+    "@babel/parser": "^7.26.2",
+    "@babel/preset-typescript": "^7.26.0",
+    "babel-plugin-react-compiler": "^19.0.0-beta-e993439-20250109",
+    "glob": "^11.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/babel__core": "^7.20.5",
+    "@types/node": "^22.10.5",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
