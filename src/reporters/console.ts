@@ -40,6 +40,17 @@ export function formatConsoleReport(result: HealthcheckResult): string {
     lines.push(colorize("Failed Components:", "red"));
     lines.push("─".repeat(50));
 
+    // Deduplicate failures by file:line:name:reason
+    type FailureEntry = {
+      filePath: string;
+      line: string | number;
+      name: string;
+      reason: string;
+      count: number;
+      suggestions: string[];
+    };
+    const seen = new Map<string, FailureEntry>();
+
     for (const file of failedFiles) {
       if (file.error) {
         lines.push(`  ${colorize("✗", "red")} ${file.filePath}`);
@@ -51,15 +62,32 @@ export function formatConsoleReport(result: HealthcheckResult): string {
         const line = failure.fnLoc?.start?.line ?? "?";
         const name = failure.fnName ?? "anonymous";
         const reason = failure.detail?.reason ?? failure.detail?.description ?? "Unknown reason";
+        const key = `${file.filePath}|${line}|${name}|${reason}`;
 
-        lines.push(`  ${colorize("✗", "red")} ${file.filePath}:${line} - ${colorize(name, "yellow")}`);
-        lines.push(`    ${colorize(reason, "gray")}`);
-
-        if (failure.detail?.suggestions?.length) {
-          for (const suggestion of failure.detail.suggestions) {
-            lines.push(`    ${colorize("→", "blue")} ${suggestion}`);
-          }
+        const existing = seen.get(key);
+        if (existing) {
+          existing.count++;
+        } else {
+          seen.set(key, {
+            filePath: file.filePath,
+            line,
+            name,
+            reason,
+            count: 1,
+            suggestions: failure.detail?.suggestions ?? [],
+          });
         }
+      }
+    }
+
+    for (const { filePath, line, name, reason, count, suggestions } of seen.values()) {
+      const countSuffix = count > 1 ? ` ${colorize(`(×${count})`, "gray")}` : "";
+
+      lines.push(`  ${colorize("✗", "red")} ${filePath}:${line} - ${colorize(name, "yellow")}${countSuffix}`);
+      lines.push(`    ${colorize(reason, "gray")}`);
+
+      for (const suggestion of suggestions) {
+        lines.push(`    ${colorize("→", "blue")} ${suggestion}`);
       }
     }
     lines.push("");
