@@ -22,22 +22,10 @@ inputs:
     description: 'Fail if error percentage exceeds this value (0-100). Ignored if fail-on-error is true.'
     required: false
     default: '0'
-  comment-on-pr:
-    description: 'Post results as a PR comment'
-    required: false
-    default: 'true'
-  annotations:
-    description: 'Add inline annotations to PR'
-    required: false
-    default: 'true'
   working-directory:
     description: 'Working directory for the action'
     required: false
     default: '.'
-  github-token:
-    description: 'GitHub token for PR comments'
-    required: false
-    default: ${{ github.token }}
 
 outputs:
   total-files:

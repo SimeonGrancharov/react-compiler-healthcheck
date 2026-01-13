@@ -23,8 +23,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 
 // src/action.ts
-var core2 = __toESM(require("@actions/core"));
-var github = __toESM(require("@actions/github"));
+var core = __toESM(require("@actions/core"));
 var path2 = __toESM(require("path"));
 
 // src/core/scanner.ts
@@ -108,7 +107,7 @@ function loadBabelPlugin(workspaceFolder) {
     cachedPlugin = { plugin, version, source: resolvedPath };
     console.log(`Using babel-plugin-react-compiler@${version} from ${resolvedPath}`);
     return plugin;
-  } catch (error2) {
+  } catch (error) {
     pluginLoadFailed = true;
     console.error(
       `
@@ -180,7 +179,7 @@ function checkFile(filePath, workspaceFolder) {
   let sourceCode;
   try {
     sourceCode = fs.readFileSync(absolutePath, "utf-8");
-  } catch (error2) {
+  } catch (error) {
     return {
       filePath,
       success: false,
@@ -188,7 +187,7 @@ function checkFile(filePath, workspaceFolder) {
         successfulCompilations: [],
         failedCompilations: []
       },
-      error: `Failed to read file: ${error2?.message}`
+      error: `Failed to read file: ${error?.message}`
     };
   }
   const plugin = loadBabelPlugin(workspaceFolder);
@@ -217,7 +216,7 @@ function checkFile(filePath, workspaceFolder) {
       success: !hasFailures,
       compilationResult
     };
-  } catch (error2) {
+  } catch (error) {
     return {
       filePath,
       success: false,
@@ -225,7 +224,7 @@ function checkFile(filePath, workspaceFolder) {
         successfulCompilations: [],
         failedCompilations: []
       },
-      error: `Compilation error: ${error2?.message}`
+      error: `Compilation error: ${error?.message}`
     };
   }
 }
@@ -296,154 +295,6 @@ function formatConsoleReport(result) {
   return lines.join("\n");
 }
 
-// src/reporters/markdown.ts
-function formatMarkdownReport(result, options = {}) {
-  const { repoUrl, commitSha, showSuccesses = false } = options;
-  const { summary, results } = result;
-  const lines = [];
-  const passRate = summary.totalComponents > 0 ? (summary.passedComponents / summary.totalComponents * 100).toFixed(1) : "0.0";
-  const statusEmoji = summary.failedComponents === 0 ? "\u2705" : "\u274C";
-  lines.push(`## ${statusEmoji} React Compiler Healthcheck`);
-  lines.push("");
-  lines.push("| Metric | Value |");
-  lines.push("|--------|-------|");
-  lines.push(`| Files scanned | ${summary.totalFiles} |`);
-  lines.push(`| Total components | ${summary.totalComponents} |`);
-  lines.push(`| Passed | ${summary.passedComponents} |`);
-  lines.push(`| Failed | ${summary.failedComponents} |`);
-  lines.push(`| Pass rate | ${passRate}% |`);
-  lines.push("");
-  const failedFiles = results.filter(
-    (r) => r.compilationResult.failedCompilations.length > 0 || r.error
-  );
-  if (failedFiles.length > 0) {
-    lines.push("<details>");
-    lines.push(`<summary>\u274C Failed Components (${summary.failedComponents})</summary>`);
-    lines.push("");
-    for (const file of failedFiles) {
-      if (file.error) {
-        lines.push(`#### \`${file.filePath}\``);
-        lines.push(`> \u26A0\uFE0F ${file.error}`);
-        lines.push("");
-        continue;
-      }
-      for (const failure of file.compilationResult.failedCompilations) {
-        const line = failure.fnLoc?.start?.line ?? 0;
-        const name = failure.fnName ?? "anonymous";
-        const reason = failure.detail?.reason ?? failure.detail?.description ?? "Unknown reason";
-        const fileLink = formatFileLink(file.filePath, line, repoUrl, commitSha);
-        lines.push(`#### ${fileLink} - \`${name}\``);
-        lines.push(`> ${reason}`);
-        if (failure.detail?.suggestions?.length) {
-          lines.push("");
-          lines.push("**Suggestions:**");
-          for (const suggestion of failure.detail.suggestions) {
-            lines.push(`- ${suggestion}`);
-          }
-        }
-        lines.push("");
-      }
-    }
-    lines.push("</details>");
-    lines.push("");
-  }
-  if (showSuccesses && summary.passedComponents > 0) {
-    const successfulFiles = results.filter(
-      (r) => r.compilationResult.successfulCompilations.length > 0
-    );
-    lines.push("<details>");
-    lines.push(`<summary>\u2705 Optimized Components (${summary.passedComponents})</summary>`);
-    lines.push("");
-    for (const file of successfulFiles) {
-      for (const success of file.compilationResult.successfulCompilations) {
-        const line = success.fnLoc?.start?.line ?? 0;
-        const name = success.fnName ?? "anonymous";
-        const fileLink = formatFileLink(file.filePath, line, repoUrl, commitSha);
-        lines.push(`- ${fileLink} - \`${name}\``);
-      }
-    }
-    lines.push("");
-    lines.push("</details>");
-    lines.push("");
-  }
-  if (summary.failedComponents === 0 && summary.totalComponents > 0) {
-    lines.push("\u{1F389} **All components are optimized by React Compiler!**");
-  }
-  lines.push("");
-  lines.push("---");
-  lines.push("*Generated by [React Compiler Healthcheck](https://github.com/anthropics/react-compiler-healthcheck)*");
-  return lines.join("\n");
-}
-function formatFileLink(filePath, line, repoUrl, commitSha) {
-  if (repoUrl && commitSha) {
-    const url = `${repoUrl}/blob/${commitSha}/${filePath}#L${line}`;
-    return `[\`${filePath}:${line}\`](${url})`;
-  }
-  return `\`${filePath}:${line}\``;
-}
-
-// src/reporters/annotations.ts
-var core = __toESM(require("@actions/core"));
-function createAnnotations(result) {
-  const annotations = [];
-  for (const file of result.results) {
-    if (file.error) {
-      annotations.push({
-        path: file.filePath,
-        startLine: 1,
-        endLine: 1,
-        level: "error",
-        message: file.error,
-        title: "React Compiler Error"
-      });
-      continue;
-    }
-    for (const failure of file.compilationResult.failedCompilations) {
-      const startLine = failure.fnLoc?.start?.line ?? 1;
-      const endLine = failure.fnLoc?.end?.line ?? startLine;
-      const name = failure.fnName ?? "anonymous";
-      const reason = failure.detail?.reason ?? failure.detail?.description ?? "Unknown reason";
-      let message = `Component "${name}" was not optimized by React Compiler.
-
-Reason: ${reason}`;
-      if (failure.detail?.suggestions?.length) {
-        message += "\n\nSuggestions:\n" + failure.detail.suggestions.map((s) => `\u2022 ${s}`).join("\n");
-      }
-      annotations.push({
-        path: file.filePath,
-        startLine,
-        endLine,
-        level: "warning",
-        message,
-        title: `React Compiler: ${name} not optimized`
-      });
-    }
-  }
-  return annotations;
-}
-function emitAnnotations(result) {
-  const annotations = createAnnotations(result);
-  for (const annotation of annotations) {
-    const properties = {
-      file: annotation.path,
-      startLine: annotation.startLine,
-      endLine: annotation.endLine,
-      title: annotation.title
-    };
-    switch (annotation.level) {
-      case "error":
-        core.error(annotation.message, properties);
-        break;
-      case "warning":
-        core.warning(annotation.message, properties);
-        break;
-      case "notice":
-        core.notice(annotation.message, properties);
-        break;
-    }
-  }
-}
-
 // src/index.ts
 async function runHealthcheck(config = {}) {
   const {
@@ -482,8 +333,8 @@ function calculateSummary(results) {
   let filesWithErrors = 0;
   let filesFullyOptimized = 0;
   for (const result of results) {
-    const { compilationResult, error: error2 } = result;
-    if (error2) {
+    const { compilationResult, error } = result;
+    if (error) {
       filesWithErrors++;
       continue;
     }
@@ -510,59 +361,23 @@ function calculateSummary(results) {
 
 // src/action.ts
 function parseInputs() {
-  const includeRaw = core2.getInput("include") || "**/*.jsx,**/*.tsx";
-  const excludeRaw = core2.getInput("exclude") || "**/node_modules/**";
+  const includeRaw = core.getInput("include") || "**/*.jsx,**/*.tsx";
+  const excludeRaw = core.getInput("exclude") || "**/node_modules/**";
   return {
     include: includeRaw.split(",").map((s) => s.trim()).filter(Boolean),
     exclude: excludeRaw.split(",").map((s) => s.trim()).filter(Boolean),
-    failOnError: core2.getInput("fail-on-error") !== "false",
-    failThreshold: parseInt(core2.getInput("fail-threshold") || "0", 10),
-    commentOnPr: core2.getInput("comment-on-pr") !== "false",
-    annotations: core2.getInput("annotations") !== "false",
-    workingDirectory: core2.getInput("working-directory") || ".",
-    githubToken: core2.getInput("github-token")
+    failOnError: core.getInput("fail-on-error") !== "false",
+    failThreshold: parseInt(core.getInput("fail-threshold") || "0", 10),
+    workingDirectory: core.getInput("working-directory") || "."
   };
-}
-async function findExistingComment(octokit, owner, repo, prNumber) {
-  const comments = await octokit.rest.issues.listComments({
-    owner,
-    repo,
-    issue_number: prNumber
-  });
-  const marker = "<!-- react-compiler-healthcheck -->";
-  const existing = comments.data.find((c) => c.body?.includes(marker));
-  return existing?.id ?? null;
-}
-async function postOrUpdateComment(octokit, owner, repo, prNumber, body) {
-  const marker = "<!-- react-compiler-healthcheck -->";
-  const fullBody = `${marker}
-${body}`;
-  const existingCommentId = await findExistingComment(octokit, owner, repo, prNumber);
-  if (existingCommentId) {
-    await octokit.rest.issues.updateComment({
-      owner,
-      repo,
-      comment_id: existingCommentId,
-      body: fullBody
-    });
-    core2.info(`Updated existing PR comment #${existingCommentId}`);
-  } else {
-    await octokit.rest.issues.createComment({
-      owner,
-      repo,
-      issue_number: prNumber,
-      body: fullBody
-    });
-    core2.info("Created new PR comment");
-  }
 }
 async function run() {
   try {
     const inputs = parseInputs();
     const cwd = path2.resolve(inputs.workingDirectory);
-    core2.info(`Working directory: ${cwd}`);
-    core2.info(`Include patterns: ${inputs.include.join(", ")}`);
-    core2.info(`Exclude patterns: ${inputs.exclude.join(", ")}`);
+    core.info(`Working directory: ${cwd}`);
+    core.info(`Include patterns: ${inputs.include.join(", ")}`);
+    core.info(`Exclude patterns: ${inputs.exclude.join(", ")}`);
     const result = await runHealthcheck({
       include: inputs.include,
       exclude: inputs.exclude,
@@ -570,26 +385,12 @@ async function run() {
     });
     const { summary } = result;
     const passRate = summary.totalComponents > 0 ? summary.passedComponents / summary.totalComponents * 100 : 100;
-    core2.setOutput("total-files", summary.totalFiles.toString());
-    core2.setOutput("total-components", summary.totalComponents.toString());
-    core2.setOutput("passed", summary.passedComponents.toString());
-    core2.setOutput("failed", summary.failedComponents.toString());
-    core2.setOutput("pass-rate", passRate.toFixed(1));
+    core.setOutput("total-files", summary.totalFiles.toString());
+    core.setOutput("total-components", summary.totalComponents.toString());
+    core.setOutput("passed", summary.passedComponents.toString());
+    core.setOutput("failed", summary.failedComponents.toString());
+    core.setOutput("pass-rate", passRate.toFixed(1));
     console.log(formatConsoleReport(result));
-    if (inputs.annotations) {
-      emitAnnotations(result);
-    }
-    const context2 = github.context;
-    const isPullRequest = !!context2.payload.pull_request;
-    if (inputs.commentOnPr && isPullRequest && inputs.githubToken) {
-      const octokit = github.getOctokit(inputs.githubToken);
-      const prNumber = context2.payload.pull_request.number;
-      const { owner, repo } = context2.repo;
-      const repoUrl = `https://github.com/${owner}/${repo}`;
-      const commitSha = context2.sha;
-      const markdown = formatMarkdownReport(result, { repoUrl, commitSha });
-      await postOrUpdateComment(octokit, owner, repo, prNumber, markdown);
-    }
     let shouldFail = false;
     if (inputs.failOnError && summary.failedComponents > 0) {
       shouldFail = true;
@@ -599,17 +400,17 @@ async function run() {
         shouldFail = true;
       }
     }
-    core2.setOutput("success", (!shouldFail).toString());
+    core.setOutput("success", (!shouldFail).toString());
     if (shouldFail) {
-      core2.setFailed(
+      core.setFailed(
         `React Compiler healthcheck failed: ${summary.failedComponents} component(s) not optimized`
       );
     }
-  } catch (error2) {
-    if (error2 instanceof Error) {
-      core2.setFailed(error2.message);
+  } catch (error) {
+    if (error instanceof Error) {
+      core.setFailed(error.message);
     } else {
-      core2.setFailed("An unexpected error occurred");
+      core.setFailed("An unexpected error occurred");
     }
   }
 }

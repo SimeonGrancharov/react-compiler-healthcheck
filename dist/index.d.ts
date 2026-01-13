@@ -75,24 +75,6 @@ declare function scanFiles(options: ScanOptions): Promise<string[]>;
 declare function formatConsoleReport(result: HealthcheckResult): string;
 declare function printConsoleReport(result: HealthcheckResult): void;
 
-type MarkdownReportOptions = {
-    repoUrl?: string;
-    commitSha?: string;
-    showSuccesses?: boolean;
-};
-declare function formatMarkdownReport(result: HealthcheckResult, options?: MarkdownReportOptions): string;
-
-type Annotation = {
-    path: string;
-    startLine: number;
-    endLine: number;
-    level: "error" | "warning" | "notice";
-    message: string;
-    title: string;
-};
-declare function createAnnotations(result: HealthcheckResult): Annotation[];
-declare function emitAnnotations(result: HealthcheckResult): void;
-
 declare function runHealthcheck(config?: Partial<HealthcheckConfig>): Promise<HealthcheckResult>;
 
-export { type Annotation, type CompilationResult, DEFAULT_EXCLUDE_PATTERNS, DEFAULT_INCLUDE_PATTERNS, type FileCheckResult, type HealthcheckConfig, type HealthcheckResult, type HealthcheckSummary, type LoggerEvent, type MarkdownReportOptions, checkFile, checkFiles, clearPluginCache, createAnnotations, emitAnnotations, formatConsoleReport, formatMarkdownReport, printConsoleReport, runHealthcheck, scanFiles };
+export { type CompilationResult, DEFAULT_EXCLUDE_PATTERNS, DEFAULT_INCLUDE_PATTERNS, type FileCheckResult, type HealthcheckConfig, type HealthcheckResult, type HealthcheckSummary, type LoggerEvent, checkFile, checkFiles, clearPluginCache, formatConsoleReport, printConsoleReport, runHealthcheck, scanFiles };

@@ -6,8 +6,6 @@ A GitHub Action that verifies your React components are optimized by [React Comp
 
 - Scans your codebase for React components
 - Reports which components pass/fail React Compiler optimization
-- Posts results as PR comments with detailed breakdown
-- Adds inline annotations on failing components
 - Configurable thresholds and failure modes
 - Works with monorepos (pnpm, npm, yarn)
 
@@ -41,8 +39,6 @@ jobs:
           include: 'src/**/*.tsx,src/**/*.jsx'
           exclude: '**/node_modules/**,**/__tests__/**'
           fail-on-error: 'false'
-          comment-on-pr: 'true'
-          annotations: 'true'
 ```
 
 ## Inputs
@@ -53,10 +49,7 @@ jobs:
 | `exclude` | Glob patterns to exclude (comma-separated) | `**/node_modules/**,**/*.test.*,**/__tests__/**` |
 | `fail-on-error` | Fail the action if any component fails compilation | `true` |
 | `fail-threshold` | Fail if error percentage exceeds this value (0-100) | `0` |
-| `comment-on-pr` | Post results as a PR comment | `true` |
-| `annotations` | Add inline annotations to PR | `true` |
 | `working-directory` | Working directory for the action | `.` |
-| `github-token` | GitHub token for PR comments | `${{ github.token }}` |
 
 ## Outputs
 
@@ -80,15 +73,6 @@ pnpm add babel-plugin-react-compiler
 ```
 
 The action uses your project's installed version to ensure consistent results.
-
-## Example PR Comment
-
-The action posts a summary comment on PRs showing:
-
-- Total files scanned and components found
-- Pass/fail counts and percentage
-- List of failing components with error messages
-- Links to the exact line numbers
 
 ## Common Failure Reasons
 

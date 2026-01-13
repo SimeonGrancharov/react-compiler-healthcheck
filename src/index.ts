@@ -25,10 +25,6 @@ export { checkFile, checkFiles, clearPluginCache } from "./core/compiler";
 export { scanFiles, DEFAULT_INCLUDE_PATTERNS, DEFAULT_EXCLUDE_PATTERNS } from "./core/scanner";
 
 export { formatConsoleReport, printConsoleReport } from "./reporters/console";
-export { formatMarkdownReport } from "./reporters/markdown";
-export type { MarkdownReportOptions } from "./reporters/markdown";
-export { createAnnotations, emitAnnotations } from "./reporters/annotations";
-export type { Annotation } from "./reporters/annotations";
 
 export async function runHealthcheck(
   config: Partial<HealthcheckConfig> = {}

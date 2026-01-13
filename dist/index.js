@@ -35,10 +35,7 @@ __export(index_exports, {
   checkFile: () => checkFile,
   checkFiles: () => checkFiles,
   clearPluginCache: () => clearPluginCache,
-  createAnnotations: () => createAnnotations,
-  emitAnnotations: () => emitAnnotations,
   formatConsoleReport: () => formatConsoleReport,
-  formatMarkdownReport: () => formatMarkdownReport,
   printConsoleReport: () => printConsoleReport,
   runHealthcheck: () => runHealthcheck,
   scanFiles: () => scanFiles
@@ -130,7 +127,7 @@ function loadBabelPlugin(workspaceFolder) {
     cachedPlugin = { plugin, version, source: resolvedPath };
     console.log(`Using babel-plugin-react-compiler@${version} from ${resolvedPath}`);
     return plugin;
-  } catch (error2) {
+  } catch (error) {
     pluginLoadFailed = true;
     console.error(
       `
@@ -202,7 +199,7 @@ function checkFile(filePath, workspaceFolder) {
   let sourceCode;
   try {
     sourceCode = fs.readFileSync(absolutePath, "utf-8");
-  } catch (error2) {
+  } catch (error) {
     return {
       filePath,
       success: false,
@@ -210,7 +207,7 @@ function checkFile(filePath, workspaceFolder) {
         successfulCompilations: [],
         failedCompilations: []
       },
-      error: `Failed to read file: ${error2?.message}`
+      error: `Failed to read file: ${error?.message}`
     };
   }
   const plugin = loadBabelPlugin(workspaceFolder);
@@ -239,7 +236,7 @@ function checkFile(filePath, workspaceFolder) {
       success: !hasFailures,
       compilationResult
     };
-  } catch (error2) {
+  } catch (error) {
     return {
       filePath,
       success: false,
@@ -247,7 +244,7 @@ function checkFile(filePath, workspaceFolder) {
         successfulCompilations: [],
         failedCompilations: []
       },
-      error: `Compilation error: ${error2?.message}`
+      error: `Compilation error: ${error?.message}`
     };
   }
 }
@@ -321,154 +318,6 @@ function printConsoleReport(result) {
   console.log(formatConsoleReport(result));
 }
 
-// src/reporters/markdown.ts
-function formatMarkdownReport(result, options = {}) {
-  const { repoUrl, commitSha, showSuccesses = false } = options;
-  const { summary, results } = result;
-  const lines = [];
-  const passRate = summary.totalComponents > 0 ? (summary.passedComponents / summary.totalComponents * 100).toFixed(1) : "0.0";
-  const statusEmoji = summary.failedComponents === 0 ? "\u2705" : "\u274C";
-  lines.push(`## ${statusEmoji} React Compiler Healthcheck`);
-  lines.push("");
-  lines.push("| Metric | Value |");
-  lines.push("|--------|-------|");
-  lines.push(`| Files scanned | ${summary.totalFiles} |`);
-  lines.push(`| Total components | ${summary.totalComponents} |`);
-  lines.push(`| Passed | ${summary.passedComponents} |`);
-  lines.push(`| Failed | ${summary.failedComponents} |`);
-  lines.push(`| Pass rate | ${passRate}% |`);
-  lines.push("");
-  const failedFiles = results.filter(
-    (r) => r.compilationResult.failedCompilations.length > 0 || r.error
-  );
-  if (failedFiles.length > 0) {
-    lines.push("<details>");
-    lines.push(`<summary>\u274C Failed Components (${summary.failedComponents})</summary>`);
-    lines.push("");
-    for (const file of failedFiles) {
-      if (file.error) {
-        lines.push(`#### \`${file.filePath}\``);
-        lines.push(`> \u26A0\uFE0F ${file.error}`);
-        lines.push("");
-        continue;
-      }
-      for (const failure of file.compilationResult.failedCompilations) {
-        const line = failure.fnLoc?.start?.line ?? 0;
-        const name = failure.fnName ?? "anonymous";
-        const reason = failure.detail?.reason ?? failure.detail?.description ?? "Unknown reason";
-        const fileLink = formatFileLink(file.filePath, line, repoUrl, commitSha);
-        lines.push(`#### ${fileLink} - \`${name}\``);
-        lines.push(`> ${reason}`);
-        if (failure.detail?.suggestions?.length) {
-          lines.push("");
-          lines.push("**Suggestions:**");
-          for (const suggestion of failure.detail.suggestions) {
-            lines.push(`- ${suggestion}`);
-          }
-        }
-        lines.push("");
-      }
-    }
-    lines.push("</details>");
-    lines.push("");
-  }
-  if (showSuccesses && summary.passedComponents > 0) {
-    const successfulFiles = results.filter(
-      (r) => r.compilationResult.successfulCompilations.length > 0
-    );
-    lines.push("<details>");
-    lines.push(`<summary>\u2705 Optimized Components (${summary.passedComponents})</summary>`);
-    lines.push("");
-    for (const file of successfulFiles) {
-      for (const success of file.compilationResult.successfulCompilations) {
-        const line = success.fnLoc?.start?.line ?? 0;
-        const name = success.fnName ?? "anonymous";
-        const fileLink = formatFileLink(file.filePath, line, repoUrl, commitSha);
-        lines.push(`- ${fileLink} - \`${name}\``);
-      }
-    }
-    lines.push("");
-    lines.push("</details>");
-    lines.push("");
-  }
-  if (summary.failedComponents === 0 && summary.totalComponents > 0) {
-    lines.push("\u{1F389} **All components are optimized by React Compiler!**");
-  }
-  lines.push("");
-  lines.push("---");
-  lines.push("*Generated by [React Compiler Healthcheck](https://github.com/anthropics/react-compiler-healthcheck)*");
-  return lines.join("\n");
-}
-function formatFileLink(filePath, line, repoUrl, commitSha) {
-  if (repoUrl && commitSha) {
-    const url = `${repoUrl}/blob/${commitSha}/${filePath}#L${line}`;
-    return `[\`${filePath}:${line}\`](${url})`;
-  }
-  return `\`${filePath}:${line}\``;
-}
-
-// src/reporters/annotations.ts
-var core = __toESM(require("@actions/core"));
-function createAnnotations(result) {
-  const annotations = [];
-  for (const file of result.results) {
-    if (file.error) {
-      annotations.push({
-        path: file.filePath,
-        startLine: 1,
-        endLine: 1,
-        level: "error",
-        message: file.error,
-        title: "React Compiler Error"
-      });
-      continue;
-    }
-    for (const failure of file.compilationResult.failedCompilations) {
-      const startLine = failure.fnLoc?.start?.line ?? 1;
-      const endLine = failure.fnLoc?.end?.line ?? startLine;
-      const name = failure.fnName ?? "anonymous";
-      const reason = failure.detail?.reason ?? failure.detail?.description ?? "Unknown reason";
-      let message = `Component "${name}" was not optimized by React Compiler.
-
-Reason: ${reason}`;
-      if (failure.detail?.suggestions?.length) {
-        message += "\n\nSuggestions:\n" + failure.detail.suggestions.map((s) => `\u2022 ${s}`).join("\n");
-      }
-      annotations.push({
-        path: file.filePath,
-        startLine,
-        endLine,
-        level: "warning",
-        message,
-        title: `React Compiler: ${name} not optimized`
-      });
-    }
-  }
-  return annotations;
-}
-function emitAnnotations(result) {
-  const annotations = createAnnotations(result);
-  for (const annotation of annotations) {
-    const properties = {
-      file: annotation.path,
-      startLine: annotation.startLine,
-      endLine: annotation.endLine,
-      title: annotation.title
-    };
-    switch (annotation.level) {
-      case "error":
-        core.error(annotation.message, properties);
-        break;
-      case "warning":
-        core.warning(annotation.message, properties);
-        break;
-      case "notice":
-        core.notice(annotation.message, properties);
-        break;
-    }
-  }
-}
-
 // src/index.ts
 async function runHealthcheck(config = {}) {
   const {
@@ -507,8 +356,8 @@ function calculateSummary(results) {
   let filesWithErrors = 0;
   let filesFullyOptimized = 0;
   for (const result of results) {
-    const { compilationResult, error: error2 } = result;
-    if (error2) {
+    const { compilationResult, error } = result;
+    if (error) {
       filesWithErrors++;
       continue;
     }
@@ -539,10 +388,7 @@ function calculateSummary(results) {
   checkFile,
   checkFiles,
   clearPluginCache,
-  createAnnotations,
-  emitAnnotations,
   formatConsoleReport,
-  formatMarkdownReport,
   printConsoleReport,
   runHealthcheck,
   scanFiles

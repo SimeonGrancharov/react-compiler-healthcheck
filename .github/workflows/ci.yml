@@ -50,5 +50,3 @@ jobs:
           include: 'src/__tests__/fixtures/**/*.tsx'
           exclude: '**/node_modules/**'
           fail-on-error: 'false'
-          annotations: 'true'
-          comment-on-pr: 'true'
