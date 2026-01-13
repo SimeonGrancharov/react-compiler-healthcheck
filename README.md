@@ -83,6 +83,12 @@ Components may fail React Compiler optimization for various reasons:
 - **Dependency mismatches** - Manual deps don't match inferred ones
 - **try/catch limitations** - Conditional logic in try/catch blocks
 
+## Support
+
+If you find this action helpful, consider supporting my work:
+
+[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/zambis)
+
 ## License
 
 MIT
