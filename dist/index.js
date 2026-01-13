@@ -372,13 +372,19 @@ function calculateSummary(results) {
   let filesWithErrors = 0;
   let filesFullyOptimized = 0;
   for (const result of results) {
-    const { compilationResult, error } = result;
+    const { compilationResult, error, filePath } = result;
     if (error) {
       filesWithErrors++;
       continue;
     }
     const passed = compilationResult.successfulCompilations.length;
-    const failed = compilationResult.failedCompilations.length;
+    const uniqueFailedComponents = /* @__PURE__ */ new Set();
+    for (const failure of compilationResult.failedCompilations) {
+      const line = failure.fnLoc?.start?.line ?? "?";
+      const name = failure.fnName ?? "anonymous";
+      uniqueFailedComponents.add(`${filePath}|${line}|${name}`);
+    }
+    const failed = uniqueFailedComponents.size;
     totalComponents += passed + failed;
     passedComponents += passed;
     failedComponents += failed;
