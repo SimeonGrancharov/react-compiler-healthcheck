@@ -1,6 +1,6 @@
 name: 'React Compiler Healthcheck'
 description: 'Verify React components are optimized by React Compiler'
-author: 'Your Name'
+author: 'Simeon Grancharov'
 branding:
   icon: 'check-circle'
   color: 'blue'
