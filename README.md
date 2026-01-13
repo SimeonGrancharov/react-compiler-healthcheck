@@ -34,7 +34,7 @@ jobs:
         run: npm ci
 
       - name: React Compiler Healthcheck
-        uses: SimeonGrancharov/react-compiler-healthcheck@v1.0.1
+        uses: SimeonGrancharov/react-compiler-healthcheck@v1.0.2
         with:
           include: 'src/**/*.tsx,src/**/*.jsx'
           exclude: '**/node_modules/**,**/__tests__/**'
