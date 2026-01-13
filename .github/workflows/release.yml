@@ -1,12 +1,15 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'  # Matches 1.0.0, 2.1.3, etc.
 
 jobs:
-  build-and-verify:
+  build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -36,21 +39,19 @@ jobs:
           fi
           echo "Action bundle size: $(du -h dist/action/action.js | cut -f1)"
 
-  update-major-tag:
-    needs: build-and-verify
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Update major version tag
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
-          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MAJOR=v$(echo $VERSION | cut -d. -f1)
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git tag -fa $MAJOR -m "Update $MAJOR tag to $VERSION"
           git push origin $MAJOR --force
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          name: v${{ github.ref_name }}
