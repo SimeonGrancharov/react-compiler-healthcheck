@@ -47,8 +47,8 @@ jobs:
       - name: React Compiler Healthcheck
         uses: ./
         with:
-          include: 'src/**/*.tsx,src/**/*.ts'
-          exclude: '**/node_modules/**,**/__tests__/**,**/*.test.*'
+          include: 'src/__tests__/fixtures/**/*.tsx'
+          exclude: '**/node_modules/**'
           fail-on-error: 'false'
           annotations: 'true'
           comment-on-pr: 'true'
