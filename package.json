@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run build:lib && npm run build:action",
     "build:lib": "tsup src/index.ts --format cjs --dts --clean",
-    "build:action": "ncc build src/action.ts -o dist/action --minify",
+    "build:action": "tsup --config tsup.action.config.ts",
     "dev": "tsup src/index.ts src/action.ts --format cjs --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -32,7 +32,6 @@
   "devDependencies": {
     "@types/babel__core": "^7.20.5",
     "@types/node": "^22.10.5",
-    "@vercel/ncc": "^0.38.4",
     "tsup": "^8.3.5",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
