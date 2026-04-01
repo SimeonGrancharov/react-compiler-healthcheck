@@ -42,5 +42,5 @@ outputs:
     description: 'Whether the healthcheck passed'
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/action/action.js'
